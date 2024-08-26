@@ -10,14 +10,20 @@
 
 #pragma comment( lib, "dbghelp.lib" )
 
+#ifdef _WIN64
+typedef DWORD64                  ADDR;
+#else
+typedef DWORD                  ADDR;
+#endif
 
+//!@class Assembly assembly.h
 namespace Assembly
 {
-  //!@brief PrintPESectionInfo
+  //!@brief printPESectionInfo
   //!  印出PE模組各section的資訊(section名稱、位置、大小)
   //!@param hModule PE模組之HANDLE
   void PrintPESectionInfo(HANDLE hModule);
-  //!@brief GetPESectionInfo
+  //!@brief getPESectionInfo
   //!  得到PE模組中指定section名稱的位址與大小
   //!@param hModule PE模組之HANDLE
   //!@param sectionName section名稱
@@ -26,8 +32,8 @@ namespace Assembly
   //!@return
   //!  FUNCTION_NOERROR
   //!  FUNCTION_ERROR
-  int GetPESectionInfo(HANDLE hModule, const char * sectionName, DWORD &begin, DWORD &size);
-  //!@brief ByteSearch
+  int GetPESectionInfo(HANDLE hModule, const char * sectionName, ADDR &begin, DWORD &size);
+  //!@brief byteSearch
   //!  尋找目標範圍中有沒有指定的連續byte序列
   //!@param bytes 要尋找的連續byte序列
   //!@param bytesSize 連續byte序列的大小
@@ -36,14 +42,14 @@ namespace Assembly
   //!@return
   //!  如果function成功，回傳找到的位址
   //!  否則回傳FUNCTION_ERROR
-  DWORD ByteSearch(const char * bytes, const size_t bytesSize, const DWORD &begin , const DWORD &size);
-  //!@brief GetCallAddress
+  ADDR ByteSearch(const char * bytes, const size_t bytesSize, const ADDR &begin, const DWORD &size);
+  //!@brief getCallAddr
   //!  將組語中，相對CALL的offset換算成實際的位址
   //!@param currAddr CALL指令的位址
   //!@param offset CALL指令的offset
   //!@return
   //!  CALL指令的目標絕對位址
-  DWORD GetCallAddress(const DWORD & currAddr , const DWORD & offset);
+  ADDR GetCallAddress(const ADDR & currAddr, const DWORD & offset);
   //!@brief DW2LE
   //!  將DWORD轉成用Little endian表示的BYTE陣列
   //!@param data 要轉換的DWORD
@@ -51,13 +57,40 @@ namespace Assembly
   //!@return
   //!  FUNCTION_NOERROR
   //!  FUNCTION_ERROR
-  int DW2LE(const DWORD &data, BYTE *result);
+  inline int ADDR2LE(const ADDR &data, BYTE *result)
+  {
+    __try
+    {
+      for(int i = 0; i < sizeof(data); i++)
+      {
+        result[i] = (BYTE)((data >> i * 8) & 0xFF);
+      }
+    }
+    SEHEXCEPT;
 
-  //沒用
-  DWORD DWReverse( const DWORD &data );
+    return FUNCTION_NOERROR;
+  }
 
-  //沒用
-  DWORD LE2DW(BYTE *b);
-} //Assembly
+  inline DWORD DWReverse(const DWORD &data)
+  {
+    DWORD res;
+    BYTE * result = (BYTE*)&res;
+    __try
+    {
+      result[3] = (BYTE)data;
+      result[2] = (BYTE)(((DWORD)data >> 8) & 0xFF);
+      result[1] = (BYTE)(((DWORD)data >> 16) & 0xFF);
+      result[0] = (BYTE)(((DWORD)data >> 24) & 0xFF);
+    }
+    SEHEXCEPT;
+
+    return res;
+  }
+
+  inline DWORD LE2DW(BYTE *b)
+  {
+    return (DWORD)((b[0]) | (b[1] << 8) | (b[2] << 16) | (b[3] << 24));
+  }
+};
 
 #endif

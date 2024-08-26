@@ -4,6 +4,7 @@
 #include <Windows.h>
 
 //#define LOG( ... ) do { JLog( __VA_ARGS__ ); } while(0)  // Ansi/Unicode ¬Ò¥i
+#ifdef FILEOUT
 #define LOG(format,...) do {if(DebugLog::g_debugLevel >= DEBUG_INFO) DebugLog::LogA( "[%s]" format , __FUNCTION__, __VA_ARGS__); } while(0)  // Ansi/Unicode ¬Ò¥i
 #define LOGAF(format,...) do {if(DebugLog::g_debugLevel >= DEBUG_INFO) DebugLog::LogA( "[%s]" format , __FUNCTION__, __VA_ARGS__); } while(0)
 #define LOGAF_TRACE(format,...) do {if(DebugLog::g_debugLevel >= DEBUG_TRACE) DebugLog::LogA("[TRACE][%s]" format , __FUNCTION__, __VA_ARGS__); } while(0)
@@ -12,6 +13,17 @@
 #define LOGAF_WARN(format,...) do {if(DebugLog::g_debugLevel >= DEBUG_WARN) DebugLog::LogA("[WARN][%s]" format , __FUNCTION__, __VA_ARGS__); } while(0)
 #define LOGAF_ERROR(format,...) do {if(DebugLog::g_debugLevel >= DEBUG_ERROR) DebugLog::LogA("[ERROR][%s]" format , __FUNCTION__, __VA_ARGS__); } while(0)
 #define LOGAF_FATAL(format,...) do {if(DebugLog::g_debugLevel >= DEBUG_FATAL) DebugLog::LogA("[FATAL][%s]" format , __FUNCTION__, __VA_ARGS__); } while(0)
+#endif
+
+#define LOG(format,...) do {printf( "[%s]" format "\r\n", __FUNCTION__, __VA_ARGS__); } while(0)  // Ansi/Unicode ¬Ò¥i
+#define LOGAF(format,...) do {printf( "[%s]" format "\r\n", __FUNCTION__, __VA_ARGS__); } while(0) 
+#define LOGAF_TRACE(format,...)  do {printf( "[%s]" format "\r\n", __FUNCTION__, __VA_ARGS__) ;} while(0) 
+#define LOGAF_DEBUG(format,...)  do {printf( "[%s]" format "\r\n", __FUNCTION__, __VA_ARGS__) ;} while(0) 
+#define LOGAF_INFO(format,...) do {printf( "[%s]" format "\r\n", __FUNCTION__, __VA_ARGS__); } while(0) 
+#define LOGAF_WARN(format,...) do {printf( "[%s]" format "\r\n", __FUNCTION__, __VA_ARGS__); } while(0)
+#define LOGAF_ERROR(format,...) do {printf( "[%s]" format "\r\n", __FUNCTION__, __VA_ARGS__); } while(0)
+#define LOGAF_FATAL(format,...) do {printf( "[%s]" format "\r\n", __FUNCTION__, __VA_ARGS__); } while(0)
+
 
 #define LOGWF_TRACE __noop
 #define LOGWF_DEBUG  __noop
@@ -19,6 +31,7 @@
 #define LOGWF_WARN  __noop
 #define LOGWF_ERROR  __noop
 #define LOGWF_FATAL  __noop
+#define AUTOLOG  __noop
 
 enum DebugLevel
 {

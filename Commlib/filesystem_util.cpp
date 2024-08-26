@@ -1,108 +1,23 @@
 #include "filesystem_util.h"
 
-#include <Windows.h>
+#include <fstream>
 #include <Shlobj.h>
 #include <Shlwapi.h>
-#include <tlhelp32.h>
-#include <wtsapi32.h>
 
+#include "WinUser.hpp"
 #include "macros.h"
 #include "debug_log.h"
 
-#pragma comment(lib, "WtsApi32.lib")
 #pragma comment(lib, "version.lib")
+#pragma comment(lib, "Shlwapi.lib")
 
 using std::wstring;
 
 namespace FileSystem
 {
-  HANDLE GetCurrentSessionUserTokenAccordingExplorer()
+  static long long toInteger(LARGE_INTEGER const & integer)
   {
-    HANDLE hProcessSnap;
-    PROCESSENTRY32 pe32;
-
-    // Take a snapshot of all processes in the system.
-    hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-    if(hProcessSnap == INVALID_HANDLE_VALUE)
-    {
-      LOGAF_ERROR("CreateToolhelp32Snapshot fail");
-      return NULL;
-    }
-
-    DWORD dwSid = (DWORD)-1;
-    if(!ProcessIdToSessionId(GetCurrentProcessId(), &dwSid))
-      return NULL;
-
-    // Set the size of the structure before using it.
-    pe32.dwSize = sizeof(PROCESSENTRY32);
-
-    // Retrieve information about the first process,
-    // and exit if unsuccessful
-    if(!Process32First(hProcessSnap, &pe32))
-    {
-      LOGAF_ERROR("Process32First fail");
-      CloseHandle(hProcessSnap);    // Must clean up the
-      return NULL;       //   snapshot object!
-    }
-
-    // Now walk the snapshot of processes, and
-    // display information about each process in turn
-    DWORD dwPid = (DWORD)-1;
-    do
-    {
-      if(_wcsicmp(pe32.szExeFile, L"explorer.exe") == 0)
-      {
-        DWORD dwSidTmp = (DWORD)-1;
-        dwPid = pe32.th32ProcessID;
-        ProcessIdToSessionId(dwPid, &dwSidTmp);
-        if(dwSidTmp == dwSid)
-          break;
-      }
-      dwPid = (DWORD)-1; // reset
-    } while(Process32Next(hProcessSnap, &pe32));
-    CloseHandle(hProcessSnap);
-
-    HANDLE hProcess = NULL;
-    if(dwPid != (DWORD)-1)
-    {
-      hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, dwPid);
-    }
-    if(hProcess == NULL)
-    {
-      LOGAF_ERROR("Can't find the hProcess!");
-      return NULL;
-    }
-
-    HANDLE hToken = NULL;
-    BOOL bnOK = OpenProcessToken(hProcess, TOKEN_READ | TOKEN_DUPLICATE, &hToken);
-    LOGAF("GetCurrentSessionUserTokenAccordingExplorer: Get the hToken=0x%p, bnOK=%d, dwSid=%d", hToken, bnOK, dwSid);
-    return hToken;
-  }
-
-  // return <> NULL: OK
-  // return NULL: Fail
-  HANDLE GetCurrentSessionUserToken()
-  {
-    // 不需要依靠 explorer 的方法
-    DWORD dwSid = 0;
-    HANDLE hToken = NULL;
-    ProcessIdToSessionId(GetCurrentProcessId(), &dwSid);
-
-    if(!WTSQueryUserToken(dwSid, &hToken))
-    {
-      DWORD dwErr = GetLastError();
-      LOGAF_ERROR("GetCurrentSessionUserToken: NG, dwSid = %u, dwErr = %d ( 0x%08X ), use old method", dwSid, dwErr, dwErr);
-
-      int iTry = 0;
-      while((hToken = GetCurrentSessionUserTokenAccordingExplorer()) == NULL && iTry < 5)
-      {
-        Sleep(1000);
-        iTry++;
-        LOGAF_ERROR("GetCurrentSessionUserTokenAccordingExplorer: Can't get hToken of the user in current session, iTry=%d", iTry);
-      }
-    }
-
-    return hToken; // 注意! Caller 必須自行 CloseHandle( hToken ) !!
+    return (static_cast<long long>(integer.HighPart) << 32) | integer.LowPart;
   }
 
   DWORD File::GetDllVersion(const std::wstring & dllname, Version & ver)
@@ -217,6 +132,28 @@ namespace FileSystem
     return buffer;
   }
 
+  std::wstring Path::GetModulePath(HMODULE module)
+  {
+    std::wstring ret = L"";
+
+    WCHAR wszDir[MAX_PATH] = { 0 };
+    GetModuleFileName(module, wszDir, MAX_PATH);
+
+    std::wstring path = wszDir;
+    size_t index = path.find_last_of(L'\\');
+    if(index != std::wstring::npos)
+    {
+      ret = path.erase(index, std::wstring::npos);
+    }
+    else
+    {
+      LOGAF_ERROR("%S without backslash!", path.c_str());
+    }
+
+    LOGAF_INFO("GetDllDirPath: => (%S)", ret.c_str());
+    return ret;
+  }
+
   DWORD Directory::Delete(const wstring &path)
   {
     WIN32_FIND_DATA ffd;
@@ -307,9 +244,9 @@ namespace FileSystem
     return FatherDirectory.substr(0, nPosition);
   }
 
-  BOOL Directory::Exist(const std::wstring & Directory)
+  BOOL Directory::Exist(const WCHAR * Directory)
   {
-    DWORD dwAttrib = GetFileAttributes(Directory.c_str());
+    DWORD dwAttrib = GetFileAttributes(Directory);
 
     return (dwAttrib != INVALID_FILE_ATTRIBUTES);
   }
@@ -336,15 +273,20 @@ namespace FileSystem
     do
     {
       // "." OR ".."
-      if(recursive && ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+
+      if(ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
       {
         if(strcmp(ffd.cFileName, ".") == 0 || strcmp(ffd.cFileName, "..") == 0)
         {
-          LOGAF_DEBUG("Skip FILE_ATTRIBUTE_DIRECTORY");
+          LOGAF_DEBUG("Skip Root Dir!");
+        }
+        else if(recursive)
+        {
+          vec.splice(vec.end(), ListAll(path + "\\" + ffd.cFileName, true));
         }
         else
         {
-          vec.splice(vec.end(), ListAll(path + "\\" + ffd.cFileName, true));
+          LOGAF_DEBUG("Skip FILE_ATTRIBUTE_DIRECTORY!");
         }
       }
       else
@@ -365,6 +307,111 @@ namespace FileSystem
 
     FindClose(hFind);
     return vec;
+  }
+
+  std::list<std::wstring> File::ListAll(const std::wstring & path, bool recursive)
+  {
+    std::list<std::wstring> vec;
+
+    WIN32_FIND_DATAW ffd;
+    HANDLE hFind = INVALID_HANDLE_VALUE;
+    DWORD error = 0;
+
+    std::wstring file = path + L"\\*";
+
+    LOGAF("FindFile: %S", file.c_str());
+    hFind = FindFirstFileW(file.c_str(), &ffd);
+    if(hFind == INVALID_HANDLE_VALUE)
+    {
+      error = GetLastError();
+      LOGAF_ERROR("FindFirstFile FAIL! %p", error);
+      return vec;
+    }
+
+    do
+    {
+      // "." OR ".."
+
+      if(ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+      {
+        if(wcscmp(ffd.cFileName, L".") == 0 || wcscmp(ffd.cFileName, L"..") == 0)
+        {
+          LOGAF_DEBUG("Skip Root Dir!");
+        }
+        else if(recursive)
+        {
+          vec.splice(vec.end(), ListAll(path + L"\\" + ffd.cFileName, true));
+        }
+        else
+        {
+          LOGAF_DEBUG("Skip FILE_ATTRIBUTE_DIRECTORY!");
+        }
+      }
+      else
+      {
+        vec.emplace_back(path + L"\\" + ffd.cFileName);
+      }
+    } while(FindNextFileW(hFind, &ffd) != 0);
+
+    error = GetLastError();
+    if(error != ERROR_NO_MORE_FILES)
+    {
+      LOGAF_ERROR("FindNextFile FAIL! %p", error);
+    }
+    else
+    {
+      error = 0;
+    }
+
+    FindClose(hFind);
+    return vec;
+  }
+
+  std::string File::ReadAll(const std::wstring &file)
+  {
+    std::ifstream in(file, std::ios::in | std::ios::binary);
+    if(in)
+    {
+      std::string contents;
+
+      in.seekg(0, std::ios::end);
+      contents.resize(in.tellg());
+      in.seekg(0, std::ios::beg);
+
+      in.read(&contents[0], contents.size());
+      in.close();
+      return (contents);
+    }
+
+    return "";
+  }
+
+  INT64 File::Size(const std::wstring & file)
+  {
+    INT64 ret = -1;
+    HANDLE hFile;
+    hFile = CreateFile(file.c_str(),               // file to open
+      GENERIC_READ,          // open for reading
+      FILE_SHARE_READ,       // share for reading
+      NULL,                  // default security
+      OPEN_EXISTING,         // existing file only
+      FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, // normal file
+      NULL);
+
+    if(hFile == INVALID_HANDLE_VALUE)
+    {
+      return ret;
+    }
+
+    LARGE_INTEGER lInt;
+    if(!GetFileSizeEx(hFile, &lInt))
+    {
+      ret = toInteger(lInt);
+    }
+
+    CloseHandle(hFile);
+
+    return ret;
   }
 
   std::wstring Path::Combine(const std::wstring &path1, const std::wstring &path2)
@@ -456,15 +503,22 @@ namespace FileSystem
 
   wstring Path::GetLocalAppDataDir()
   {
-    HANDLE token = GetCurrentSessionUserToken();
+    std::wstring res;
+
+    HANDLE token = User::GetCurrentSessionUserToken();
 
     WCHAR buffer[MAX_PATH] = { 0 };
-    if(S_OK != SHGetFolderPathW(NULL, CSIDL_LOCAL_APPDATA | CSIDL_FLAG_CREATE, token, SHGFP_TYPE_CURRENT, buffer))
-    { // fail
-      return wstring();
+    if(S_OK == SHGetFolderPathW(NULL, CSIDL_LOCAL_APPDATA | CSIDL_FLAG_CREATE, token, SHGFP_TYPE_CURRENT, buffer))
+    {
+      res = wstring(buffer);
     }
 
-    return wstring(buffer);
+    if(!token)
+    {
+      CloseHandle(token);
+    }
+
+    return res;
   }
 
   wstring Path::GetRedirectLocalAppDataDir()

@@ -1,5 +1,6 @@
 #pragma once
 
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <string>
 #include <list>
@@ -35,11 +36,17 @@ namespace FileSystem
     ULONGLONG GetModifiedTime(const std::wstring &file);
     bool Exist(const std::wstring &path);
     std::list<std::string> ListAll(const std::string &path, bool recursive = false);
+    std::list<std::wstring> ListAll(const std::wstring &path, bool recursive = false);
+
+    std::string ReadAll(const std::wstring &file);
+
+    INT64 Size(const std::wstring &file);
+
   };
 
   namespace Directory
   {
-    BOOL Exist(const std::wstring & Directory);
+    BOOL Exist(const WCHAR * Directory);
     DWORD Delete(const std::wstring &path);
 
     // Create directory recursively if not exist
@@ -64,6 +71,7 @@ namespace FileSystem
     std::wstring GetMyDocument();
     std::wstring GetWindowsEnvironmentVariable(const std::wstring &key);
     std::wstring GetCurrentDir();
+    std::wstring GetModulePath(HMODULE module = NULL);
 
     std::wstring Combine(const std::wstring &path1, const std::wstring &path2);
     std::wstring GetAllUsersDir();
@@ -82,6 +90,4 @@ namespace FileSystem
     std::wstring GetTemporaryFilesPath();
 #endif
   };
-
- 
 }

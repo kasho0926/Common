@@ -106,6 +106,7 @@
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -140,6 +141,7 @@
     <ClInclude Include="argument.h" />
     <ClInclude Include="assembly.h" />
     <ClInclude Include="AutoLock.hpp" />
+    <ClInclude Include="AutoStructure.hpp" />
     <ClInclude Include="csv_parser.hpp" />
     <ClInclude Include="debug_log_extension.h" />
     <ClInclude Include="detours_function.h" />
@@ -147,17 +149,31 @@
     <ClInclude Include="dll_injector.hpp" />
     <ClInclude Include="event_sink.h" />
     <ClInclude Include="filesystem_util.h" />
+    <ClInclude Include="DllWrapper.hpp" />
+    <ClInclude Include="FZipDllWrapper.hpp" />
+    <ClInclude Include="GlobalVar.hpp" />
+    <ClInclude Include="Hash.hpp" />
     <ClInclude Include="ini_util.h" />
+    <ClInclude Include="Injector.hpp" />
+    <ClInclude Include="IRunCmd.hpp" />
+    <ClInclude Include="Kernel.hpp" />
     <ClInclude Include="locale_util.hpp" />
+    <ClInclude Include="LPMPacker.hpp" />
     <ClInclude Include="macros.h" />
+    <ClInclude Include="Mutex.hpp" />
     <ClInclude Include="MyFileStream.h" />
     <ClInclude Include="my_exception.h" />
     <ClInclude Include="registry.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="RunDef.hpp" />
+    <ClInclude Include="RunDllWrapper.hpp" />
+    <ClInclude Include="SharedMemory.hpp" />
     <ClInclude Include="standard_exception_utils.hpp" />
     <ClInclude Include="structured_exception_handle.hpp" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="string_utils.hpp" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="WinUser.hpp" />
     <ClInclude Include="WMI_control.h" />
   </ItemGroup>
   <ItemGroup>
@@ -179,6 +195,9 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="WMI_control.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Commlib.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

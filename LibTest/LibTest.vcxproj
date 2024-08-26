@@ -156,6 +156,7 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="test_macros.h" />
+    <ClInclude Include="ZipTest.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LibTest.cpp" />
