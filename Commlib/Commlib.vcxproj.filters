@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\DLL">
+      <UniqueIdentifier>{33d478e5-43eb-40f5-ae18-8b6e7d91eccf}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -84,19 +87,7 @@
     <ClInclude Include="debug_log_extension.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RunDllWrapper.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="DllWrapper.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="IRunCmd.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RunDef.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FZipDllWrapper.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">
@@ -128,6 +119,21 @@
     </ClInclude>
     <ClInclude Include="GlobalVar.hpp">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DllWrapper.hpp">
+      <Filter>Header Files\DLL</Filter>
+    </ClInclude>
+    <ClInclude Include="FZipDllWrapper.hpp">
+      <Filter>Header Files\DLL</Filter>
+    </ClInclude>
+    <ClInclude Include="RunDllWrapper.hpp">
+      <Filter>Header Files\DLL</Filter>
+    </ClInclude>
+    <ClInclude Include="RunDef.hpp">
+      <Filter>Header Files\DLL</Filter>
+    </ClInclude>
+    <ClInclude Include="XOCRDllWrapper.hpp">
+      <Filter>Header Files\DLL</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
