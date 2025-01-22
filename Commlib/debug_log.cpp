@@ -5,6 +5,7 @@
 
 #include "AutoLock.hpp"
 #include "filesystem_util.h"
+#include "string_utils.hpp"
 
 #ifdef DEBUG_EXTENTION
 #include "debug_log_extension.h"
@@ -107,7 +108,7 @@ namespace DebugLog
     g_log = 0;
   }
 
-  void WriteToFile(const char * pMessage)
+  void WriteToFile(const BYTE * pMessage, size_t size)
   {
     HANDLE hFile;
 
@@ -124,40 +125,40 @@ namespace DebugLog
     if(hFile == INVALID_HANDLE_VALUE)
       return;
 
-    // Check size of file (no more than 2MB)
-    if(GetFileSize(hFile, NULL) > 1024 * 1024 * g_logSize)
-    {
-      // Close file
-      CloseHandle(hFile);
-
-      // Move file
-
-      if(PathFileExists(g_archivePath))
-        DeleteFile(g_archivePath);
-      MoveFile(g_newestPath, g_archivePath);
-
-      // Reopen file
-      hFile = CreateFileW(
-        g_newestPath,
-        GENERIC_WRITE,
-        0,
-        NULL,
-        OPEN_ALWAYS,
-        FILE_ATTRIBUTE_NORMAL,
-        NULL);
-    }
-
-    if(hFile == INVALID_HANDLE_VALUE)
-      return;
-
     try
     {
+      // Check size of file (no more than 2MB)
+      if(GetFileSize(hFile, NULL) > 1024 * 1024 * g_logSize)
+      {
+        // Close file
+        CloseHandle(hFile);
+
+        // Move file
+
+        if(PathFileExists(g_archivePath))
+          DeleteFile(g_archivePath);
+        MoveFile(g_newestPath, g_archivePath);
+
+        // Reopen file
+        hFile = CreateFileW(
+          g_newestPath,
+          GENERIC_WRITE,
+          0,
+          NULL,
+          OPEN_ALWAYS,
+          FILE_ATTRIBUTE_NORMAL,
+          NULL);
+      }
+
+      if(hFile == INVALID_HANDLE_VALUE)
+        return;
+
       if(INVALID_SET_FILE_POINTER == SetFilePointer(hFile, 0, NULL, FILE_END))
       {
         CloseHandle(hFile);
         return;
       }
-      size_t MessageLength = strnlen(pMessage, MSG_SZ);	// 確定字串最長只有 MSG_SZ
+      size_t MessageLength = size;
       DWORD BytesWritten;
       WriteFile(hFile, pMessage, MessageLength, &BytesWritten, NULL);
     }
@@ -166,6 +167,18 @@ namespace DebugLog
     }
 
     CloseHandle(hFile);
+  }
+
+  void WriteToFile(const char * pMessage)
+  {
+    size_t MessageLength = strnlen(pMessage, MSG_SZ);	// 確定字串最長只有 MSG_SZ
+    WriteToFile((BYTE*)pMessage, MessageLength);
+  }
+
+  void WriteToFile(const WCHAR * pMessage)
+  {
+    size_t MessageLength = wcsnlen(pMessage, MSG_SZ) * 2;	// 確定字串最長只有 MSG_SZ
+    WriteToFile((BYTE*)pMessage, MessageLength);
   }
 
   void LogA(const char * format, ...)
@@ -203,6 +216,44 @@ namespace DebugLog
 
       strcat_s(&message[0], MSG_SZ, "\r\n");
       WriteToFile(message.c_str());
+    }
+  }
+
+  void LogW(const WCHAR * format, ...)
+  {
+    if(g_log == 0)
+    {
+      return;
+    }
+
+    AutoLock Lock(JLogCriticalSection);
+
+    va_list valist;
+    DWORD pid = GetCurrentProcessId();
+    DWORD tid = GetCurrentThreadId();
+
+    SYSTEMTIME SystemTime;
+    GetLocalTime(&SystemTime);
+
+    std::wstring message;
+    message.resize(MSG_SZ, L'\0');
+
+    // Generate log message and push to queue
+    int n = _snwprintf_s(&message[0], MSG_SZ, MSG_SZ - 3, L"%hu/%02hu/%02hu %02hu:%02hu:%02hu.%03hu [Pid=%5u][Tid=%5u]",
+      SystemTime.wYear, SystemTime.wMonth, SystemTime.wDay, SystemTime.wHour, SystemTime.wMinute, SystemTime.wSecond, SystemTime.wMilliseconds, pid, tid);
+    if(n > 0)
+    {
+      va_start(valist, format);
+      _vsnwprintf_s(&message[0] + n, MSG_SZ - n, MSG_SZ - n - 3, format, valist);
+      va_end(valist);
+
+      if(g_debug)
+      {
+        OutputDebugStringW(message.c_str());
+      }
+
+      wcscat_s(&message[0], MSG_SZ, L"\r\n");
+      WriteToFile(StringUtils::Convert::Utf16WideCharToUtf8MultiByte(message.c_str()).c_str());
     }
   }
 

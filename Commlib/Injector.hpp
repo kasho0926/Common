@@ -3,6 +3,7 @@
 #include <string>
 #include <exception>
 #define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <windows.h>
 
 #include "filesystem_util.h"

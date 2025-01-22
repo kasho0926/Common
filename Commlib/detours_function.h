@@ -1,6 +1,8 @@
 #ifndef _DETOURS_FUNCTION_H
 #define _DETOURS_FUNCTION_H
 
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <Windows.h>
 #include <string>
 

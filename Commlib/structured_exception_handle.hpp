@@ -1,6 +1,8 @@
 #ifndef _STRUCTURED_EXCEPTION_HANDLE_H
 #define _STRUCTURED_EXCEPTION_HANDLE_H
 
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <Windows.h>
 #include "debug_log.h"
 

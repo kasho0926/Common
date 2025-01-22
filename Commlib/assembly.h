@@ -3,6 +3,8 @@
 #define _ASSEMBLY_H
 
 #include "macros.h"
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <Windows.h>
 #include <DbgHelp.h>
 #include "debug_log.h"

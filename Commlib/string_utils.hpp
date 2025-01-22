@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <Windows.h>
 
 #include "debug_log.h"
@@ -100,7 +102,6 @@ namespace StringUtils
           if(nSize > result.max_size())
           {
             nSize = result.max_size();
-            LOGAF_WARN("string too long! truncated!");
           }
 
           result.resize(nSize);
@@ -109,11 +110,19 @@ namespace StringUtils
       }
       catch(std::exception &e)
       {
-        LOGAF_ERROR("Exception: %s", e.what());
+        throw std::runtime_error(
+          std::string("Exception occurred in function: ") + __FUNCTION__ +
+          ", file: " + __FILE__ +
+          ", line: " + std::to_string(__LINE__) + ", " + e.what()
+        );
       }
       catch(...)
       {
-        LOGAF_ERROR("Caught an exception in catch(...).");
+        throw std::runtime_error(
+          std::string("Exception occurred in function: ") + __FUNCTION__ +
+          ", file: " + __FILE__ +
+          ", line: " + std::to_string(__LINE__)
+        );
       }
 
       return result;
@@ -133,7 +142,6 @@ namespace StringUtils
           if(nSize > result.max_size())
           {
             nSize = result.max_size();
-            LOGAF_WARN("string too long! truncated!");
           }
 
           result.resize(nSize);
@@ -142,11 +150,19 @@ namespace StringUtils
       }
       catch(std::exception &e)
       {
-        LOGAF_ERROR("Exception: %s", e.what());
+        throw std::runtime_error(
+          std::string("Exception occurred in function: ") + __FUNCTION__ +
+          ", file: " + __FILE__ +
+          ", line: " + std::to_string(__LINE__) + ", " + e.what()
+        );
       }
       catch(...)
       {
-        LOGAF_ERROR("Caught an exception in catch(...).");
+        throw std::runtime_error(
+          std::string("Exception occurred in function: ") + __FUNCTION__ +
+          ", file: " + __FILE__ +
+          ", line: " + std::to_string(__LINE__)
+        );
       }
 
       return result;

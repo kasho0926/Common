@@ -1,6 +1,8 @@
 #ifndef _REGISTRY_H
 #define _REGISTRY_H
 #include <string>
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <Windows.h>
 
 namespace Registry

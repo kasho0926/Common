@@ -1,8 +1,9 @@
 #ifndef _AUTO_LOCK
 #define _AUTO_LOCK
 
-#define WIN32_LEAN_AND_MEAN
 #include <memory>
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <Windows.h>
 
 namespace Sync {

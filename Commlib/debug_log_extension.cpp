@@ -1,5 +1,7 @@
 #include "debug_log_extension.h"
 
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <Windows.h>
 
 void DebugLog::ReadExtraSettings(const std::wstring & conf)
